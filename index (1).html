@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ahmed Fikry — /root/portfolio</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&family=Fira+Code:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+:root {
+  --bg: #000000;
+  --green: #00ff41;
+  --green2: #00cc33;
+  --green3: #008f11;
+  --green-dim: #003a0f;
+  --purple: #9b5de5;
+  --white: #ccffcc;
+  --gray: #3a6b3a;
+  --light: #7dbb7d;
+  --card: rgba(0,20,0,0.85);
+  --border: rgba(0,255,65,0.18);
+  --glow: 0 0 20px rgba(0,255,65,0.3),0 0 40px rgba(0,255,65,0.1);
+  --text-glow: 0 0 8px rgba(0,255,65,0.8);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--green);font-family:'Fira Code',monospace;overflow-x:hidden;cursor:none}
+
+#matrix-canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;opacity:0.13}
+#hero-canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:1;pointer-events:none}
+.scanlines{position:fixed;top:0;left:0;width:100%;height:100%;z-index:3;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,0.25) 3px,rgba(0,0,0,0.25) 4px)}
+.vignette{position:fixed;top:0;left:0;width:100%;height:100%;z-index:3;pointer-events:none;background:radial-gradient(ellipse at center,transparent 60%,rgba(0,0,0,0.7) 100%)}
+.p-glow1{position:fixed;top:-150px;right:5%;width:500px;height:500px;border-radius:50%;background:radial-gradient(ellipse,rgba(155,93,229,0.06) 0%,transparent 70%);z-index:1;pointer-events:none;animation:floatBlob 14s ease-in-out infinite}
+.p-glow2{position:fixed;bottom:10%;left:0%;width:350px;height:350px;border-radius:50%;background:radial-gradient(ellipse,rgba(155,93,229,0.04) 0%,transparent 70%);z-index:1;pointer-events:none;animation:floatBlob 20s ease-in-out infinite reverse}
+@keyframes floatBlob{0%,100%{transform:translate(0,0)}33%{transform:translate(20px,-30px)}66%{transform:translate(-15px,20px)}}
+
+#cursor{position:fixed;width:14px;height:14px;border:2px solid var(--green);pointer-events:none;z-index:9999;transform:translate(-50%,-50%);transition:transform 0.1s;box-shadow:var(--glow)}
+#cursor-dot{position:fixed;width:4px;height:4px;background:var(--green);pointer-events:none;z-index:9999;transform:translate(-50%,-50%)}
+#cursor-ring{position:fixed;width:40px;height:40px;border:1px solid rgba(0,255,65,0.3);pointer-events:none;z-index:9998;transform:translate(-50%,-50%);transition:all 0.15s ease}
+
+nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:1rem 3.5rem;background:rgba(0,0,0,0.92);border-bottom:1px solid var(--border);backdrop-filter:blur(4px)}
+.nav-logo{font-family:'VT323',monospace;font-size:1.4rem;color:var(--green);text-decoration:none;letter-spacing:0.05em;text-shadow:var(--text-glow)}
+.blink{animation:blink 1s step-end infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.nav-links{display:flex;gap:2rem;list-style:none;align-items:center}
+.nav-links a{font-family:'Share Tech Mono',monospace;font-size:0.72rem;color:var(--gray);text-decoration:none;letter-spacing:0.1em;transition:color 0.2s,text-shadow 0.2s}
+.nav-links a::before{content:'./';color:var(--green3);transition:color 0.2s}
+.nav-links a:hover{color:var(--green);text-shadow:var(--text-glow)}
+.nav-links a:hover::before{color:var(--green)}
+.nav-github{padding:0.35rem 0.9rem;border:1px solid var(--border);color:var(--light)!important;display:flex;align-items:center;gap:0.4rem;transition:all 0.2s!important;font-size:0.68rem!important}
+.nav-github::before{display:none!important}
+.nav-github:hover{border-color:var(--green)!important;color:var(--green)!important;box-shadow:var(--glow)}
+.nav-github svg{width:13px;height:13px;fill:currentColor}
+.nav-hamburger{display:none;flex-direction:column;gap:5px;background:none;border:none;cursor:pointer;padding:4px}
+.nav-hamburger span{display:block;width:24px;height:2px;background:var(--green);transition:all 0.3s;transform-origin:center}
+.nav-hamburger.open span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+.nav-hamburger.open span:nth-child(2){opacity:0}
+.nav-hamburger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
+.nav-drawer{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.97);z-index:99;flex-direction:column;align-items:center;justify-content:center;gap:2rem}
+.nav-drawer.open{display:flex}
+.nav-drawer a{font-family:'Share Tech Mono',monospace;font-size:1.1rem;color:var(--gray);text-decoration:none;letter-spacing:0.15em;transition:color 0.2s}
+.nav-drawer a::before{content:'> ';color:var(--green3)}
+.nav-drawer a:hover{color:var(--green);text-shadow:var(--text-glow)}
+
+section{position:relative;z-index:10}
+
+#hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;padding:0 8rem;position:relative}
+.term-chrome{position:absolute;top:0;left:8rem;font-family:'Share Tech Mono',monospace;font-size:0.65rem;color:var(--green3);letter-spacing:0.1em;padding-top:5.5rem;opacity:0;animation:fadeIn 0.5s 0.2s forwards}
+.term-bar{display:flex;align-items:center;gap:0.5rem;margin-bottom:0.6rem}
+.term-btn{width:10px;height:10px;border-radius:50%;display:inline-block}
+.term-btn.r{background:#ff5f57}.term-btn.y{background:#ffbd2e}.term-btn.g{background:#28c840}
+.term-title{margin-left:0.5rem;color:var(--gray);font-size:0.6rem}
+.hero-prompt{font-family:'Share Tech Mono',monospace;font-size:0.78rem;color:var(--green3);margin-bottom:0.5rem;opacity:0;animation:fadeUp 0.5s 0.4s forwards}
+.hero-prompt .pu{color:var(--green)}.hero-prompt .ph{color:var(--green2)}.hero-prompt .pp{color:var(--green3)}
+.hero-name{font-family:'VT323',monospace;font-size:clamp(4rem,9vw,8rem);font-weight:400;line-height:0.9;color:var(--green);text-shadow:var(--text-glow),0 0 40px rgba(0,255,65,0.3);margin-bottom:0.3rem;opacity:0;display:inline-block;position:relative}
+.hero-name.glitch{animation:fadeUp 0.6s 0.6s forwards,rgbFlash 3s 2s infinite}
+.glitch::before,.glitch::after{content:attr(data-text);position:absolute;top:0;left:0;width:100%;height:100%;font-family:inherit;font-size:inherit;font-weight:inherit;line-height:inherit;pointer-events:none}
+.glitch::before{color:#00ff41;animation:glitchTop 3s infinite;clip-path:polygon(0 0,100% 0,100% 38%,0 38%);text-shadow:-3px 0 #00ff41}
+.glitch::after{color:#ff2d78;animation:glitchBot 3s infinite;clip-path:polygon(0 62%,100% 62%,100% 100%,0 100%);text-shadow:3px 0 #ff2d78}
+@keyframes glitchTop{0%,80%,100%{transform:translate(0);opacity:0}81%{transform:translate(-6px,-3px) skewX(-5deg);opacity:1}82%{transform:translate(6px,2px) skewX(3deg);opacity:1}83%{transform:translate(-4px,0) skewX(-2deg);opacity:1}84%{transform:translate(4px,-2px);opacity:1}85%,86%{transform:translate(0);opacity:0}87%{transform:translate(-8px,1px) skewX(6deg);opacity:1}88%{transform:translate(8px,-1px);opacity:1}89%{transform:translate(0);opacity:0}}
+@keyframes glitchBot{0%,80%,100%{transform:translate(0);opacity:0}81%{transform:translate(6px,3px) skewX(5deg);opacity:1}82%{transform:translate(-6px,-2px) skewX(-3deg);opacity:1}83%{transform:translate(4px,0) skewX(2deg);opacity:1}84%{transform:translate(-4px,2px);opacity:1}85%,86%{transform:translate(0);opacity:0}87%{transform:translate(8px,-1px) skewX(-6deg);opacity:1}88%{transform:translate(-8px,1px);opacity:1}89%{transform:translate(0);opacity:0}}
+@keyframes rgbFlash{0%,79%,90%,100%{text-shadow:var(--text-glow),0 0 40px rgba(0,255,65,0.3);color:var(--green)}80%{text-shadow:-4px 0 #00ff41,4px 0 #ff2d78,0 0 20px #00ff41;color:#ffffff}81%{text-shadow:4px 0 #00ff41,-4px 0 #ff2d78}82%{text-shadow:none}83%{text-shadow:-3px 0 var(--purple),3px 0 #00ff41}84%{text-shadow:none}87%{text-shadow:5px 0 #ff2d78,-5px 0 #00ff41;color:#ccffcc}88%{text-shadow:var(--text-glow);color:var(--green)}}
+
+.hero-cmd{font-family:'Share Tech Mono',monospace;font-size:clamp(0.75rem,1.5vw,1rem);color:var(--green3);margin-bottom:2rem;opacity:0;animation:fadeUp 0.6s 1s forwards;display:flex;align-items:center;gap:0.5rem}
+.hero-cmd .cb{color:var(--green);opacity:0.4}
+.hero-cmd #typed{color:var(--green2)}
+.typed-cursor{color:var(--green);animation:blink 0.8s step-end infinite}
+.hero-output{font-family:'Fira Code',monospace;font-size:0.88rem;color:var(--light);max-width:560px;line-height:1.9;margin-bottom:2.5rem;opacity:0;animation:fadeUp 0.6s 1.2s forwards;border-left:2px solid var(--green-dim);padding-left:1.2rem}
+.hero-output .comment{color:var(--gray);font-size:0.78rem}
+.hero-btns{display:flex;gap:1rem;flex-wrap:wrap;opacity:0;animation:fadeUp 0.6s 1.4s forwards}
+.btn-primary{padding:0.75rem 2rem;background:transparent;color:var(--green);border:1px solid var(--green);font-family:'Share Tech Mono',monospace;font-size:0.75rem;letter-spacing:0.1em;cursor:none;text-decoration:none;transition:all 0.2s;position:relative;overflow:hidden;display:inline-block}
+.btn-primary::before{content:'> ';color:var(--green3)}
+.btn-primary:hover{background:rgba(0,255,65,0.08);box-shadow:var(--glow);color:#fff}
+.btn-secondary{padding:0.75rem 2rem;background:transparent;color:var(--gray);border:1px solid var(--green-dim);font-family:'Share Tech Mono',monospace;font-size:0.75rem;letter-spacing:0.1em;cursor:none;text-decoration:none;transition:all 0.2s;display:inline-block}
+.btn-secondary::before{content:'$ ';color:var(--green3)}
+.btn-secondary:hover{border-color:var(--green);color:var(--green);box-shadow:0 0 15px rgba(0,255,65,0.15)}
+.hero-status{position:absolute;right:8rem;bottom:5rem;font-family:'Share Tech Mono',monospace;font-size:0.65rem;color:var(--green3);opacity:0;animation:fadeIn 0.8s 1.8s forwards;display:flex;flex-direction:column;gap:0.5rem;text-align:right}
+.status-line{display:flex;align-items:center;gap:0.5rem;justify-content:flex-end}
+.status-dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse 2s infinite;flex-shrink:0}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+.status-val{color:var(--green);font-size:0.9rem;font-family:'VT323',monospace}
+.scroll-hint{position:absolute;bottom:2.5rem;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:0.4rem;font-family:'Share Tech Mono',monospace;font-size:0.58rem;color:var(--green3);letter-spacing:0.15em;opacity:0;animation:fadeIn 1s 2.5s forwards}
+.scroll-line{width:1px;height:40px;background:linear-gradient(to bottom,var(--green),transparent);animation:scrollDown 1.5s infinite}
+@keyframes scrollDown{0%{transform:scaleY(0);transform-origin:top}50%{transform:scaleY(1);transform-origin:top}51%{transform:scaleY(1);transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}
+
+.divider{padding:1.5rem 8rem;display:flex;align-items:center;gap:1rem}
+.divider-line{flex:1;height:1px;background:var(--border)}
+.divider-txt{font-family:'Share Tech Mono',monospace;font-size:0.6rem;color:var(--green3);letter-spacing:0.2em;white-space:nowrap}
+.term-header{padding:0 8rem;margin-bottom:2.5rem}
+.term-header .cmd-line{font-family:'Share Tech Mono',monospace;font-size:0.7rem;color:var(--green3);margin-bottom:0.5rem}
+.term-header .cmd-line .u{color:var(--green)}
+.term-header h2{font-family:'VT323',monospace;font-size:clamp(2.5rem,5vw,4rem);color:var(--green);text-shadow:var(--text-glow);line-height:1}
+.term-header h2 .dim{color:var(--green3);font-size:0.7em}
+
+#about{padding:6rem 8rem;display:grid;grid-template-columns:1fr 1fr;gap:6rem;align-items:center}
+.about-visual{position:relative;display:flex;align-items:center;justify-content:center}
+#about-canvas{width:420px;height:420px;border:1px solid var(--border)}
+.about-ring{position:absolute;border:1px solid rgba(0,255,65,0.1);animation:spin 20s linear infinite}
+.about-ring:nth-child(2){width:460px;height:460px;border-style:dashed;animation-duration:30s;animation-direction:reverse}
+.about-ring:nth-child(3){width:520px;height:520px;animation-duration:45s}
+@keyframes spin{to{transform:rotate(360deg)}}
+.about-text{font-family:'Fira Code',monospace;font-size:0.875rem;color:var(--light);line-height:1.9;margin-bottom:1rem}
+.about-text .comment{color:var(--green3)}
+.about-tags{display:flex;flex-wrap:wrap;gap:0.5rem;margin-top:1.5rem}
+.tag{padding:0.3rem 0.8rem;border:1px solid var(--border);font-family:'Share Tech Mono',monospace;font-size:0.62rem;color:var(--green);letter-spacing:0.05em;background:rgba(0,255,65,0.03);transition:all 0.2s}
+.tag::before{content:'#';color:var(--green3);margin-right:0.2rem}
+.tag:hover{background:rgba(0,255,65,0.08);border-color:var(--green);box-shadow:0 0 10px rgba(0,255,65,0.1)}
+
+#experience{padding:6rem 8rem}
+.exp-grid{display:grid;grid-template-columns:260px 1fr;gap:0;margin-top:2.5rem}
+.exp-tabs{display:flex;flex-direction:column;border-right:1px solid var(--border)}
+.exp-tab{padding:1rem 1.2rem;font-family:'Share Tech Mono',monospace;font-size:0.68rem;color:var(--gray);letter-spacing:0.04em;cursor:none;border:none;background:none;text-align:left;transition:all 0.2s;border-right:2px solid transparent;position:relative;right:-1px}
+.exp-tab::before{content:'$ ';color:var(--green3)}
+.exp-tab:hover{color:var(--green);background:rgba(0,255,65,0.03)}
+.exp-tab.active{color:var(--green);border-right-color:var(--green);background:rgba(0,255,65,0.05)}
+.exp-tab .tab-date{display:block;font-size:0.58rem;color:var(--green3);margin-top:0.2rem;letter-spacing:0.08em}
+.exp-panel{display:none;padding:0 2.5rem;animation:fadeIn 0.3s}
+.exp-panel.active{display:block}
+.exp-hdr{font-family:'Share Tech Mono',monospace;font-size:0.65rem;color:var(--green3);margin-bottom:0.8rem;letter-spacing:0.08em}
+.exp-title{font-family:'VT323',monospace;font-size:1.8rem;color:var(--green);text-shadow:0 0 10px rgba(0,255,65,0.3);margin-bottom:0.2rem}
+.exp-company{color:var(--green2);font-size:0.85rem;margin-bottom:0.15rem;font-family:'Share Tech Mono',monospace}
+.exp-date{font-family:'Share Tech Mono',monospace;font-size:0.62rem;color:var(--green3);margin-bottom:1.2rem;letter-spacing:0.08em}
+.exp-bullets{list-style:none;display:flex;flex-direction:column;gap:0.7rem}
+.exp-bullets li{font-size:0.85rem;color:var(--light);line-height:1.7;display:flex;gap:0.7rem;font-family:'Fira Code',monospace}
+.exp-bullets li::before{content:'▸';color:var(--green);flex-shrink:0;margin-top:0.1rem}
+
+#skills{padding:6rem 8rem}
+.skills-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.2rem;margin-top:2.5rem}
+.skill-card{padding:1.8rem;background:var(--card);border:1px solid var(--border);transition:all 0.25s;position:relative;overflow:hidden}
+.skill-card::before{content:'';position:absolute;top:0;left:0;width:100%;height:1px;background:linear-gradient(to right,var(--green),transparent);transform:scaleX(0);transform-origin:left;transition:transform 0.3s}
+.skill-card::after{content:'';position:absolute;bottom:0;right:0;width:12px;height:12px;border-bottom:1px solid var(--green3);border-right:1px solid var(--green3)}
+.skill-card:hover::before{transform:scaleX(1)}
+.skill-card:hover{border-color:rgba(0,255,65,0.35);box-shadow:var(--glow);transform:translateY(-2px)}
+.skill-icon-term{font-family:'Share Tech Mono',monospace;font-size:0.65rem;color:var(--green3);margin-bottom:0.8rem;display:block}
+.skill-cat{font-family:'VT323',monospace;font-size:1.4rem;color:var(--green);margin-bottom:0.8rem;text-shadow:0 0 8px rgba(0,255,65,0.3)}
+.skill-list{display:flex;flex-wrap:wrap;gap:0.4rem}
+.skill-pill{font-family:'Share Tech Mono',monospace;font-size:0.58rem;color:var(--green3);padding:0.2rem 0.5rem;border:1px solid rgba(0,255,65,0.12);transition:all 0.2s}
+.skill-pill:hover{border-color:var(--green);color:var(--green);background:rgba(0,255,65,0.05)}
+
+#awards{padding:6rem 8rem}
+.awards-list{display:flex;flex-direction:column;gap:1rem;margin-top:2.5rem}
+.award-card{display:grid;grid-template-columns:60px 1fr auto;align-items:center;gap:1.5rem;padding:1.4rem 2rem;background:var(--card);border:1px solid var(--border);transition:all 0.25s;position:relative;overflow:hidden}
+.award-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--green);transform:scaleY(0);transition:transform 0.3s}
+.award-card:hover::before{transform:scaleY(1)}
+.award-card:hover{border-color:rgba(0,255,65,0.3);box-shadow:0 0 20px rgba(0,255,65,0.1)}
+.award-rank{font-family:'VT323',monospace;font-size:2rem;color:var(--green3)}
+.award-name{font-family:'Share Tech Mono',monospace;font-size:0.82rem;color:var(--green);margin-bottom:0.3rem}
+.award-org{font-family:'Fira Code',monospace;font-size:0.75rem;color:var(--gray)}
+.award-year{font-family:'Share Tech Mono',monospace;font-size:0.68rem;color:var(--green3);letter-spacing:0.08em;white-space:nowrap}
+
+#contact{padding:7rem 8rem;text-align:center;position:relative}
+.contact-glow{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:700px;height:400px;background:radial-gradient(ellipse,rgba(0,255,65,0.04) 30%,rgba(155,93,229,0.03) 60%,transparent 80%);pointer-events:none}
+.contact-title{font-family:'VT323',monospace;font-size:clamp(3rem,6vw,5rem);color:var(--green);text-shadow:var(--text-glow);margin-bottom:0.8rem;line-height:1}
+.contact-sub{font-family:'Fira Code',monospace;font-size:0.85rem;color:var(--gray);margin-bottom:2.5rem;max-width:500px;margin-left:auto;margin-right:auto;line-height:1.8}
+.contact-sub .c{color:var(--green3)}
+.contact-links{display:flex;justify-content:center;gap:1rem;flex-wrap:wrap;margin-bottom:3rem}
+.contact-link{padding:0.8rem 1.8rem;border:1px solid var(--border);color:var(--gray);text-decoration:none;font-family:'Share Tech Mono',monospace;font-size:0.68rem;letter-spacing:0.1em;transition:all 0.2s;display:flex;align-items:center;gap:0.5rem;background:rgba(0,20,0,0.6)}
+.contact-link::before{content:'> ';color:var(--green3)}
+.contact-link:hover{border-color:var(--green);color:var(--green);box-shadow:var(--glow)}
+
+footer{text-align:center;padding:1.5rem;border-top:1px solid var(--border);font-family:'Share Tech Mono',monospace;font-size:0.6rem;color:var(--green3);letter-spacing:0.1em}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(25px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.reveal{opacity:0;transform:translateY(30px);transition:all 0.7s cubic-bezier(0.16,1,0.3,1)}
+.reveal.visible{opacity:1;transform:translateY(0)}
+.reveal-delay-1{transition-delay:0.1s}
+.reveal-delay-2{transition-delay:0.2s}
+.reveal-delay-3{transition-delay:0.3s}
+
+@media(max-width:1024px){
+  nav{padding:1rem 2rem}
+  .nav-links{gap:1.2rem}
+  #hero{padding:0 4rem}
+  .term-chrome{left:4rem}
+  .hero-status{right:4rem}
+  .term-header{padding:0 4rem}
+  #about{padding:5rem 4rem;gap:4rem}
+  #about-canvas{width:340px;height:340px}
+  .about-ring:nth-child(2){width:380px;height:380px}
+  .about-ring:nth-child(3){width:430px;height:430px}
+  #experience,#skills,#awards,#contact{padding:5rem 4rem}
+  .divider{padding:1.5rem 4rem}
+  .skills-grid{grid-template-columns:repeat(2,1fr)}
+  .exp-grid{grid-template-columns:210px 1fr}
+}
+@media(max-width:768px){
+  body{cursor:auto}
+  #cursor,#cursor-ring,#cursor-dot{display:none}
+  nav{padding:0.9rem 1.2rem}
+  .nav-links{display:none}
+  .nav-hamburger{display:flex}
+  #hero{padding:7rem 1.4rem 3rem;justify-content:center}
+  .term-chrome{left:1.4rem}
+  .hero-name{font-size:clamp(3rem,14vw,5rem)}
+  .hero-output{font-size:0.8rem}
+  .hero-btns{gap:0.7rem}
+  .hero-status{position:static;text-align:left;margin-top:2rem;flex-direction:row;gap:2rem;flex-wrap:wrap}
+  .scroll-hint{display:none}
+  #about{padding:4rem 1.4rem;grid-template-columns:1fr;gap:2rem}
+  .about-visual{order:-1}
+  #about-canvas{width:260px;height:260px}
+  .about-ring:nth-child(2){width:295px;height:295px}
+  .about-ring:nth-child(3){width:335px;height:335px}
+  .term-header{padding:0 1.4rem}
+  .divider{padding:1rem 1.4rem}
+  #experience{padding:4rem 1.4rem}
+  .exp-grid{grid-template-columns:1fr}
+  .exp-tabs{flex-direction:row;flex-wrap:wrap;border-right:none;border-bottom:1px solid var(--border);margin-bottom:1.5rem}
+  .exp-tab{border-right:none;border-bottom:2px solid transparent;position:static;padding:0.7rem 0.9rem;font-size:0.6rem}
+  .exp-tab.active{border-right-color:transparent;border-bottom-color:var(--green)}
+  .exp-panel{padding:0}
+  .exp-title{font-size:1.5rem}
+  #skills{padding:4rem 1.4rem}
+  .skills-grid{grid-template-columns:1fr;gap:0.8rem}
+  .skill-card{padding:1.3rem}
+  #awards{padding:4rem 1.4rem}
+  .award-card{grid-template-columns:auto 1fr;gap:1rem;padding:1.1rem 1.2rem}
+  .award-year{display:none}
+  .award-name{font-size:0.72rem}
+  #contact{padding:4rem 1.4rem}
+  .contact-title{font-size:clamp(2.2rem,8vw,3.5rem)}
+  .contact-links{flex-direction:column;align-items:center;gap:0.7rem}
+  .contact-link{width:100%;max-width:300px;justify-content:center}
+}
+@media(max-width:400px){.hero-name{font-size:clamp(2.5rem,13vw,4rem)}}
+</style>
+</head>
+<body>
+
+<canvas id="matrix-canvas"></canvas>
+<canvas id="hero-canvas"></canvas>
+<div class="scanlines"></div>
+<div class="vignette"></div>
+<div class="p-glow1"></div>
+<div class="p-glow2"></div>
+<div id="cursor"></div>
+<div id="cursor-dot"></div>
+<div id="cursor-ring"></div>
+
+<nav>
+  <a class="nav-logo" href="#">[AF]<span class="blink">█</span></a>
+  <ul class="nav-links">
+    <li><a href="#about">about</a></li>
+    <li><a href="#experience">experience</a></li>
+    <li><a href="#skills">skills</a></li>
+    <li><a href="#awards">awards</a></li>
+    <li><a href="#contact">contact</a></li>
+    <li>
+      <a href="https://github.com/Ahmed-Fekry" target="_blank" class="nav-github">
+        <svg viewBox="0 0 24 24"><path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/></svg>
+        /github
+      </a>
+    </li>
+  </ul>
+  <button class="nav-hamburger" id="hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
+</nav>
+
+<div class="nav-drawer" id="nav-drawer">
+  <a href="#about" onclick="closeDrawer()">./about</a>
+  <a href="#experience" onclick="closeDrawer()">./experience</a>
+  <a href="#skills" onclick="closeDrawer()">./skills</a>
+  <a href="#awards" onclick="closeDrawer()">./awards</a>
+  <a href="#contact" onclick="closeDrawer()">./contact</a>
+  <a href="https://github.com/Ahmed-Fekry" target="_blank">/github ↗</a>
+</div>
+
+<section id="hero">
+  <div class="term-chrome">
+    <div class="term-bar">
+      <span class="term-btn r"></span><span class="term-btn y"></span><span class="term-btn g"></span>
+      <span class="term-title">root@ahmed-fikry: ~/portfolio — bash</span>
+    </div>
+  </div>
+
+  <div class="hero-prompt">
+    <span class="pu">root</span><span style="color:var(--green3)">@</span><span class="ph">ahmed-fikry</span><span style="color:var(--green3)">:</span><span class="pp">~/portfolio</span><span style="color:var(--green)">$</span>&nbsp;whoami
+  </div>
+
+  <h1 class="hero-name glitch" data-text="Ahmed Fikry">Ahmed Fikry</h1>
+
+  <div class="hero-cmd">
+    <span class="cb">[</span><span id="typed"></span><span class="typed-cursor">█</span><span class="cb">]</span>
+  </div>
+
+  <div class="hero-output">
+    <span class="comment">// Cybersecurity engineer | Penetration tester | Entrepreneur</span><br>
+    Hacking systems by day, building products by night.<br>
+    Post-quantum cryptography researcher &amp; fintech founder.<br>
+    Based in Cairo, Egypt. Operating globally.
+  </div>
+
+  <div class="hero-btns">
+    <a href="#contact" class="btn-primary">initialize_contact</a>
+    <a href="#experience" class="btn-secondary">cat experience.txt</a>
+  </div>
+
+  <div class="hero-status">
+    <div class="status-line"><span class="status-dot"></span><span style="color:var(--green3)">GRANTS_WON&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="status-val">$35K+</span></div>
+    <div class="status-line"><span class="status-dot" style="animation-delay:0.3s"></span><span style="color:var(--green3)">TEAMS_BEATEN&nbsp;</span><span class="status-val">1200+</span></div>
+    <div class="status-line"><span class="status-dot" style="animation-delay:0.6s"></span><span style="color:var(--green3)">YEARS_ACTIVE&nbsp;</span><span class="status-val">5+</span></div>
+  </div>
+
+  <div class="scroll-hint"><div class="scroll-line"></div>scroll_down</div>
+</section>
+
+<div class="divider reveal"><div class="divider-line"></div><div class="divider-txt">-- [ SYSTEM INFO ] --</div><div class="divider-line"></div></div>
+
+<section id="about">
+  <div class="about-visual">
+    <div class="about-ring"></div>
+    <div class="about-ring"></div>
+    <canvas id="about-canvas"></canvas>
+  </div>
+  <div class="about-content">
+    <div style="margin-bottom:1.5rem">
+      <div class="reveal" style="font-family:'Share Tech Mono',monospace;font-size:0.7rem;color:var(--green3);margin-bottom:0.5rem"><span style="color:var(--green)">root@ahmed-fikry</span>:~$ cat about.txt</div>
+      <div class="reveal reveal-delay-1" style="font-family:'VT323',monospace;font-size:clamp(2.2rem,4vw,3.2rem);color:var(--green);text-shadow:var(--text-glow);line-height:1;margin-bottom:1.2rem">
+        <span style="color:var(--green3)">></span> Identity<br><span style="color:var(--green3)">></span> <span style="color:var(--green2)">Confirmed</span>
+      </div>
+    </div>
+    <p class="about-text reveal reveal-delay-2">
+      <span class="comment">// CS student @ Egypt-Japan University (2026)</span><br>
+      Specializing in cybersecurity. Trained with <strong style="color:var(--green)">ITI</strong> and <strong style="color:var(--green)">DEPI</strong>. Interned at <strong style="color:var(--green)">Crédit Agricole Egypt</strong> with FortiGate &amp; Palo Alto firewalls in a live banking environment.
+    </p>
+    <p class="about-text reveal reveal-delay-2">
+      Co-founded <strong style="color:var(--green)">Paycoo</strong> — offline digital wallet for the unbanked. Currently building a <strong style="color:var(--green)">post-quantum V2X</strong> communication system funded by ASRT. Also a UI/UX &amp; multimedia designer — I build and I brand.
+    </p>
+    <div class="about-tags reveal reveal-delay-3">
+      <span class="tag">PenTesting</span><span class="tag">PostQuantum</span><span class="tag">NetworkSec</span>
+      <span class="tag">ActiveDirectory</span><span class="tag">UI_UX</span><span class="tag">MotionGraphics</span>
+      <span class="tag">Fintech</span><span class="tag">V2X</span><span class="tag">RedTeam</span>
+    </div>
+  </div>
+</section>
+
+<div class="divider reveal"><div class="divider-line"></div><div class="divider-txt">-- [ WORK HISTORY ] --</div><div class="divider-line"></div></div>
+
+<section id="experience">
+  <div class="term-header reveal">
+    <div class="cmd-line"><span class="u">root@ahmed-fikry</span>:~$ ls -la ./experience/</div>
+    <h2>Experience<span class="dim">.log</span></h2>
+  </div>
+  <div class="exp-grid reveal reveal-delay-1">
+    <div class="exp-tabs">
+      <button class="exp-tab active" onclick="showExp(0)">credit-agricole<span class="tab-date">2025</span></button>
+      <button class="exp-tab" onclick="showExp(1)">paycoo.app<span class="tab-date">2023–now</span></button>
+      <button class="exp-tab" onclick="showExp(2)">boyot<span class="tab-date">2024–now</span></button>
+      <button class="exp-tab" onclick="showExp(3)">codex-solutions<span class="tab-date">2022–2025</span></button>
+    </div>
+    <div>
+      <div class="exp-panel active" id="exp-0">
+        <div class="exp-hdr">// role: intern | sector: banking</div>
+        <div class="exp-title">IT & Network Security Intern</div>
+        <div class="exp-company">Crédit Agricole Egypt Bank</div>
+        <div class="exp-date">AUG 2025 → SEP 2025 | Head Office, 5th Settlement, Cairo</div>
+        <ul class="exp-bullets">
+          <li>Configured enterprise routers, switches, VLANs, ACLs in a live banking environment</li>
+          <li>Hands-on with FortiGate &amp; Palo Alto NGFW — assisted in real-world security incidents</li>
+          <li>Participated in security reviews with senior network engineers</li>
+        </ul>
+      </div>
+      <div class="exp-panel" id="exp-1">
+        <div class="exp-hdr">// role: co-founder | sector: fintech</div>
+        <div class="exp-title">Co-Founder & Product Designer</div>
+        <div class="exp-company">Paycoo.app</div>
+        <div class="exp-date">DEC 2023 → PRESENT | Cairo, Egypt</div>
+        <ul class="exp-bullets">
+          <li>Offline digital wallet for the unbanked — 60% higher beta retention than competitors</li>
+          <li>Co-created Neuropay: Egypt's top 10 payment tech beta (F6S &amp; PapayaGlobal)</li>
+          <li>Pitched to 30+ VCs including the Central Bank of Egypt</li>
+          <li>Secured $35K+ in grants and prizes from national competitions</li>
+        </ul>
+      </div>
+      <div class="exp-panel" id="exp-2">
+        <div class="exp-hdr">// role: multimedia designer | sector: proptech</div>
+        <div class="exp-title">Multimedia Designer</div>
+        <div class="exp-company">Boyot</div>
+        <div class="exp-date">JUL 2024 → PRESENT | Garden City, Cairo</div>
+        <ul class="exp-bullets">
+          <li>15+ animated explainer videos → +25% client onboarding success</li>
+          <li>20+ marketing videos → 3× social media engagement</li>
+          <li>50+ visual assets → +40% platform impressions in 11 months</li>
+          <li>Branded investor decks for 10+ VC &amp; partner meetings</li>
+        </ul>
+      </div>
+      <div class="exp-panel" id="exp-3">
+        <div class="exp-hdr">// role: ui/ux & multimedia | sector: tech agency</div>
+        <div class="exp-title">UI/UX & Multimedia Designer</div>
+        <div class="exp-company">CodeX Solutions</div>
+        <div class="exp-date">JAN 2022 → JAN 2025 | Cairo, Egypt</div>
+        <ul class="exp-bullets">
+          <li>Full company rebrand across 6+ platforms</li>
+          <li>UI/UX for 3 websites → +32% avg session time</li>
+          <li>4 motion graphics campaigns → +122% reach, +60% interactions in 2 months</li>
+          <li>7+ client projects, 100% on-time delivery</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider reveal"><div class="divider-line"></div><div class="divider-txt">-- [ CAPABILITIES ] --</div><div class="divider-line"></div></div>
+
+<section id="skills">
+  <div class="term-header reveal">
+    <div class="cmd-line"><span class="u">root@ahmed-fikry</span>:~$ nmap --skills self</div>
+    <h2>Skills<span class="dim">.sh</span></h2>
+  </div>
+  <div class="skills-grid">
+    <div class="skill-card reveal">
+      <span class="skill-icon-term">root@kali:~$ ./exploit.sh</span>
+      <div class="skill-cat">Offensive Security</div>
+      <div class="skill-list">
+        <span class="skill-pill">Penetration Testing</span><span class="skill-pill">Red Teaming</span>
+        <span class="skill-pill">Kali Linux</span><span class="skill-pill">Metasploit</span>
+        <span class="skill-pill">Burp Suite</span><span class="skill-pill">Nmap</span><span class="skill-pill">SQLi/XSS/CSRF</span>
+      </div>
+    </div>
+    <div class="skill-card reveal reveal-delay-1">
+      <span class="skill-icon-term">root@fw:~$ show security-policy</span>
+      <div class="skill-cat">Network Defense</div>
+      <div class="skill-list">
+        <span class="skill-pill">FortiGate NSE4</span><span class="skill-pill">Palo Alto</span>
+        <span class="skill-pill">VLANs / ACLs</span><span class="skill-pill">Wireshark</span>
+        <span class="skill-pill">OSPF / EIGRP</span><span class="skill-pill">Cisco Packet Tracer</span>
+      </div>
+    </div>
+    <div class="skill-card reveal reveal-delay-2">
+      <span class="skill-icon-term">root@lab:~$ openssl genrsa 4096</span>
+      <div class="skill-cat">Cryptography</div>
+      <div class="skill-list">
+        <span class="skill-pill">Post-Quantum Crypto</span><span class="skill-pill">V2X Communication</span>
+        <span class="skill-pill">Secure Protocols</span><span class="skill-pill">Threat Modeling</span>
+        <span class="skill-pill">Key Exchange</span>
+      </div>
+    </div>
+    <div class="skill-card reveal">
+      <span class="skill-icon-term">root@dev:~$ python3 payload.py</span>
+      <div class="skill-cat">Programming</div>
+      <div class="skill-list">
+        <span class="skill-pill">Python</span><span class="skill-pill">C / C++</span>
+        <span class="skill-pill">Bash Scripting</span><span class="skill-pill">Linux Admin</span>
+        <span class="skill-pill">GitHub</span><span class="skill-pill">Red Hat RH124</span>
+      </div>
+    </div>
+    <div class="skill-card reveal reveal-delay-1">
+      <span class="skill-icon-term">root@studio:~$ figma --headless</span>
+      <div class="skill-cat">Design & Product</div>
+      <div class="skill-list">
+        <span class="skill-pill">UI/UX Design</span><span class="skill-pill">Figma</span>
+        <span class="skill-pill">Motion Graphics</span><span class="skill-pill">Video Editing</span>
+        <span class="skill-pill">Brand Identity</span>
+      </div>
+    </div>
+    <div class="skill-card reveal reveal-delay-2">
+      <span class="skill-icon-term">root@lang:~$ locale -a | grep UTF</span>
+      <div class="skill-cat">Languages</div>
+      <div class="skill-list">
+        <span class="skill-pill">Arabic [NATIVE]</span>
+        <span class="skill-pill">English [C1]</span>
+        <span class="skill-pill">Japanese [N5]</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider reveal"><div class="divider-line"></div><div class="divider-txt">-- [ ACHIEVEMENTS ] --</div><div class="divider-line"></div></div>
+
+<section id="awards">
+  <div class="term-header reveal">
+    <div class="cmd-line"><span class="u">root@ahmed-fikry</span>:~$ grep -r "winner" ./history/</div>
+    <h2>Awards<span class="dim">.db</span></h2>
+  </div>
+  <div class="awards-list">
+    <div class="award-card reveal">
+      <div class="award-rank">[01]</div>
+      <div><div class="award-name">Research Grant — 100,000 EGP</div><div class="award-org">ASRT · Post-Quantum V2X Security System</div></div>
+      <div class="award-year">2026</div>
+    </div>
+    <div class="award-card reveal reveal-delay-1">
+      <div class="award-rank">[02]</div>
+      <div><div class="award-name">1st Place — Hack '23 Fintech Track</div><div class="award-org">AUC · 130 teams from 14 countries</div></div>
+      <div class="award-year">2023</div>
+    </div>
+    <div class="award-card reveal reveal-delay-2">
+      <div class="award-rank">[03]</div>
+      <div><div class="award-name">2nd Place & Special Award — Rally Egypt Startup Competition</div><div class="award-org">AAST · 1,200 competing teams across Egypt</div></div>
+      <div class="award-year">2024</div>
+    </div>
+    <div class="award-card reveal reveal-delay-3">
+      <div class="award-rank">[04]</div>
+      <div><div class="award-name">2nd Place — SU Real Life Competition</div><div class="award-org">AUC · Fintech &amp; Entrepreneurship Track</div></div>
+      <div class="award-year">2024</div>
+    </div>
+    <div class="award-card reveal">
+      <div class="award-rank">[05]</div>
+      <div><div class="award-name">Local Winner — NASA Space Apps Cairo</div><div class="award-org">AUC · Global NASA Challenge</div></div>
+      <div class="award-year">2020</div>
+    </div>
+  </div>
+</section>
+
+<div class="divider reveal"><div class="divider-line"></div><div class="divider-txt">-- [ ESTABLISH CONNECTION ] --</div><div class="divider-line"></div></div>
+
+<section id="contact">
+  <div class="contact-glow"></div>
+  <div class="reveal" style="font-family:'Share Tech Mono',monospace;font-size:0.7rem;color:var(--green3);margin-bottom:0.8rem"><span style="color:var(--green)">root@ahmed-fikry</span>:~$ ssh contact@ahmed-fikry.dev</div>
+  <h2 class="contact-title reveal reveal-delay-1">&gt; Connection<br>Established_</h2>
+  <p class="contact-sub reveal reveal-delay-2">
+    <span class="c">// Whether it's a security audit, fintech collab,</span><br>
+    <span class="c">// or a conversation about post-quantum crypto —</span><br>
+    I'm always listening on port 443.
+  </p>
+  <div class="contact-links reveal reveal-delay-3">
+    <a href="mailto:ahmedfikry277@gmail.com" class="contact-link">✉ email</a>
+    <a href="https://linkedin.com/in/ahmed-fikry" class="contact-link" target="_blank">in linkedin</a>
+    <a href="https://github.com/Ahmed-Fekry" class="contact-link" target="_blank">
+      <svg style="width:13px;height:13px;fill:currentColor;flex-shrink:0" viewBox="0 0 24 24"><path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/></svg>
+      github
+    </a>
+    <a href="tel:+201064368435" class="contact-link">☏ call</a>
+  </div>
+</section>
+
+<footer>[ root@ahmed-fikry ~ ] // © 2026 · Cairo, Egypt · All systems operational · <span style="color:var(--green)">STATUS: ONLINE</span></footer>
+
+<script>
+// ── MATRIX RAIN ──
+(function(){
+  const c=document.getElementById('matrix-canvas');
+  const ctx=c.getContext('2d');
+  let W=c.width=window.innerWidth,H=c.height=window.innerHeight;
+  const chars='アイウエオカキクケコサシスセソタチツテトナニヌネノ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ<>{}[]|/\\:;.,?!@#$%^&*';
+  const fs=14,cols=Math.floor(W/fs);
+  const drops=Array(cols).fill(1);
+  function draw(){
+    ctx.fillStyle='rgba(0,0,0,0.05)';ctx.fillRect(0,0,W,H);
+    ctx.font=fs+'px Share Tech Mono';
+    for(let i=0;i<drops.length;i++){
+      const ch=chars[Math.floor(Math.random()*chars.length)];
+      if(Math.random()>0.98){ctx.fillStyle='#9b5de5';}
+      else if(Math.random()>0.97){ctx.fillStyle='#afffbf';}
+      else{ctx.fillStyle='#00ff41';}
+      ctx.fillText(ch,i*fs,drops[i]*fs);
+      if(drops[i]*fs>H&&Math.random()>0.975)drops[i]=0;
+      drops[i]++;
+    }
+  }
+  setInterval(draw,38);
+  window.addEventListener('resize',()=>{W=c.width=window.innerWidth;H=c.height=window.innerHeight;});
+})();
+
+// ── HERO 3D CANVAS ──
+(function(){
+  const canvas=document.getElementById('hero-canvas');
+  const renderer=new THREE.WebGLRenderer({canvas,alpha:true,antialias:true});
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setSize(window.innerWidth,window.innerHeight);
+  const scene=new THREE.Scene();
+  const camera=new THREE.PerspectiveCamera(60,window.innerWidth/window.innerHeight,0.1,1000);
+  camera.position.set(0,0,5);
+
+  const count=1200,geo=new THREE.BufferGeometry();
+  const pos=new Float32Array(count*3),col=new Float32Array(count*3);
+  for(let i=0;i<count;i++){
+    pos[i*3]=(Math.random()-0.5)*30;pos[i*3+1]=(Math.random()-0.5)*20;pos[i*3+2]=(Math.random()-0.5)*15;
+    const r=Math.random();
+    if(r>0.92){col[i*3]=0.61;col[i*3+1]=0.36;col[i*3+2]=0.9;}
+    else if(r>0.7){col[i*3]=0;col[i*3+1]=1;col[i*3+2]=0.25;}
+    else{col[i*3]=0;col[i*3+1]=0.5;col[i*3+2]=0.07;}
+  }
+  geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  geo.setAttribute('color',new THREE.BufferAttribute(col,3));
+  scene.add(new THREE.Points(geo,new THREE.PointsMaterial({size:0.035,vertexColors:true,transparent:true,opacity:0.8})));
+
+  const tk=new THREE.Mesh(new THREE.TorusKnotGeometry(1.1,0.35,120,16,2,3),new THREE.MeshBasicMaterial({color:0x00ff41,wireframe:true,transparent:true,opacity:0.12}));
+  tk.position.set(3.2,-0.5,-2);scene.add(tk);
+  const ico=new THREE.Mesh(new THREE.IcosahedronGeometry(0.8,1),new THREE.MeshBasicMaterial({color:0x00cc33,wireframe:true,transparent:true,opacity:0.14}));
+  ico.position.set(-3.5,1.2,-1);scene.add(ico);
+  const ico2=new THREE.Mesh(new THREE.IcosahedronGeometry(0.5,1),new THREE.MeshBasicMaterial({color:0x9b5de5,wireframe:true,transparent:true,opacity:0.18}));
+  ico2.position.set(-2,-2.2,-0.5);scene.add(ico2);
+  const halo=new THREE.Mesh(new THREE.TorusGeometry(2,0.012,6,80),new THREE.MeshBasicMaterial({color:0x9b5de5,transparent:true,opacity:0.09}));
+  halo.rotation.x=Math.PI/5;halo.position.set(1,0.5,-4);scene.add(halo);
+  const grid=new THREE.Mesh(new THREE.PlaneGeometry(22,22,22,22),new THREE.MeshBasicMaterial({color:0x00ff41,wireframe:true,transparent:true,opacity:0.04}));
+  grid.rotation.x=-Math.PI/3;grid.position.y=-3.2;scene.add(grid);
+
+  let mouse3={x:0,y:0};
+  document.addEventListener('mousemove',e=>{mouse3.x=(e.clientX/window.innerWidth-0.5)*2;mouse3.y=-(e.clientY/window.innerHeight-0.5)*2;});
+  window.addEventListener('resize',()=>{camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();renderer.setSize(window.innerWidth,window.innerHeight);});
+
+  let t=0;
+  function animate(){
+    requestAnimationFrame(animate);t+=0.007;
+    tk.rotation.x=t*0.4;tk.rotation.y=t*0.6;
+    ico.rotation.x=t*0.3;ico.rotation.y=t*0.5;
+    ico2.rotation.x=t*0.5;ico2.rotation.y=t*0.35;
+    halo.rotation.z=t*0.12;
+    camera.position.x+=(mouse3.x*0.4-camera.position.x)*0.04;
+    camera.position.y+=(mouse3.y*0.25-camera.position.y)*0.04;
+    camera.lookAt(0,0,0);renderer.render(scene,camera);
+  }
+  animate();
+})();
+
+// ── ABOUT CANVAS ──
+(function(){
+  const canvas=document.getElementById('about-canvas');
+  const renderer=new THREE.WebGLRenderer({canvas,alpha:true,antialias:true});
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setSize(420,420);
+  const scene=new THREE.Scene();
+  const camera=new THREE.PerspectiveCamera(50,1,0.1,100);
+  camera.position.set(0,0,4);
+  const group=new THREE.Group();
+  const sGeo=new THREE.SphereGeometry(0.07,8,8);
+  const N=60;
+  for(let i=0;i<N;i++){
+    const phi=Math.acos(-1+(2*i)/N),theta=Math.sqrt(N*Math.PI)*phi;
+    const s=new THREE.Mesh(sGeo,new THREE.MeshBasicMaterial({transparent:true,opacity:0.75}));
+    s.material.color.setHSL(i/N<0.9?0.35:0.75,1,0.5+i/N*0.2);
+    s.position.set(1.5*Math.cos(theta)*Math.sin(phi),1.5*Math.sin(theta)*Math.sin(phi),1.5*Math.cos(phi));
+    group.add(s);
+  }
+  const lMat=new THREE.LineBasicMaterial({color:0x00ff41,transparent:true,opacity:0.1});
+  for(let i=0;i<N;i+=4){const j=(i+7)%N;group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([group.children[i].position,group.children[j].position]),lMat));}
+  group.add(new THREE.Mesh(new THREE.SphereGeometry(0.75,32,32),new THREE.MeshBasicMaterial({color:0x000500,transparent:true,opacity:0.97})));
+  group.add(new THREE.Mesh(new THREE.TorusGeometry(1.55,0.014,8,64),new THREE.MeshBasicMaterial({color:0x00ff41,transparent:true,opacity:0.2})));
+  const r2=new THREE.Mesh(new THREE.TorusGeometry(1.15,0.01,6,40),new THREE.MeshBasicMaterial({color:0x9b5de5,transparent:true,opacity:0.2}));
+  r2.rotation.x=Math.PI/4;group.add(r2);
+  scene.add(group);
+  let t=0;
+  function animate(){requestAnimationFrame(animate);t+=0.006;group.rotation.y=t;group.rotation.x=Math.sin(t*0.4)*0.3;renderer.render(scene,camera);}
+  animate();
+})();
+
+// ── HAMBURGER ──
+const hamburger=document.getElementById('hamburger');
+const navDrawer=document.getElementById('nav-drawer');
+hamburger.addEventListener('click',()=>{
+  hamburger.classList.toggle('open');navDrawer.classList.toggle('open');
+  document.body.style.overflow=navDrawer.classList.contains('open')?'hidden':'';
+});
+function closeDrawer(){hamburger.classList.remove('open');navDrawer.classList.remove('open');document.body.style.overflow='';}
+
+// ── CURSOR ──
+const cursor=document.getElementById('cursor'),cDot=document.getElementById('cursor-dot'),ring=document.getElementById('cursor-ring');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;});
+function animCursor(){
+  cursor.style.left=mx+'px';cursor.style.top=my+'px';
+  cDot.style.left=mx+'px';cDot.style.top=my+'px';
+  rx+=(mx-rx)*0.1;ry+=(my-ry)*0.1;
+  ring.style.left=rx+'px';ring.style.top=ry+'px';
+  requestAnimationFrame(animCursor);
+}
+animCursor();
+document.querySelectorAll('a,button,.skill-card,.award-card,.exp-tab').forEach(el=>{
+  el.addEventListener('mouseenter',()=>{cursor.style.transform='translate(-50%,-50%) scale(2.5)';ring.style.opacity='0.15';});
+  el.addEventListener('mouseleave',()=>{cursor.style.transform='translate(-50%,-50%) scale(1)';ring.style.opacity='1';});
+});
+
+// ── TYPED ──
+const roles=['Cybersecurity_Engineer','Penetration_Tester','Entrepreneur/Founder','UI_UX_Designer','Multimedia_Designer','Red_Team_Operator','PostQuantum_Researcher'];
+let ri=0,ci=0,del=false;
+const typedEl=document.getElementById('typed');
+function typeLoop(){
+  const cur=roles[ri];
+  if(!del){typedEl.textContent=cur.slice(0,++ci);if(ci===cur.length){del=true;setTimeout(typeLoop,2200);return;}}
+  else{typedEl.textContent=cur.slice(0,--ci);if(ci===0){del=false;ri=(ri+1)%roles.length;}}
+  setTimeout(typeLoop,del?35:70);
+}
+typeLoop();
+
+// ── EXP TABS ──
+function showExp(i){
+  document.querySelectorAll('.exp-tab').forEach((t,j)=>t.classList.toggle('active',i===j));
+  document.querySelectorAll('.exp-panel').forEach((p,j)=>p.classList.toggle('active',i===j));
+}
+
+// ── SCROLL REVEAL ──
+const obs=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible');});},{threshold:0.1});
+document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
+</script>
+</body>
+</html>
